@@ -1,3 +1,4 @@
+
 contract ERC721 {
     // Required methods ------- MAY NEED MORE
     function totalSupply() public view returns (uint256 total);
@@ -24,9 +25,425 @@ contract Genetics {
     /// trait/heritage 1 genes of raider
     /// trait/heritage 2 genes of trainer
     /// the traits/heritages that are supposed to be passed down the child Killa
-    function mixTriats(uint256 trait1, uint256 trait2, uint256 targetBlock) public returns (uint256);
-    function mixHeritages(uint256 heritage1, uint256 heritage2, uint256 targetBlock) public returns (uint256)
+    function mixTraits(uint256[14] raider, uint256[14] trainer, uint256 targetBlock) public returns (uint256[14] child){
+        
+        uint256[13] peasent;
+        ///targetBlock will be set to cooldownEndBlock
+        ///Array will be broken down as such: 
+        
+        /// 0: type of class
+        ///     Soldier = 1, Tank = 2, Mage = 3, Trickster = 4
+        /// 1: generation
+        ///generation determines class based off parents
+        if (raider[1]%2 == 1) {
+            peasent[0] = raider[0];
+        } else {
+            peasent[0] = trainer[0]
+        }
+        peasent[1] = radier[1]+1
+        
+        /// 2: special ability of said class
+            /// Soldier: 1 = Lethal Blow, 2 = Lunge, 3 = Parry
+            /// Tank: 4 = Slam, 5 = Turtle, 6 = Daze
+            /// Mage: 7 = Cripple, 8 = Burn, 9 = Heal
+            /// Trickster: 10 = Backstab, 11 = Poison, 12 = Illusion
+            
+        ///sets the special ability based of generation
+        if (peasent[0] == 1) {
+            if (peasent[1]%3 == 1) {
+                peasent[2] = 1;
+            }
+            if (peasent[1]%3 == 2) {
+                peasent[2] = 2;
+            }
+            if (peasent[1]%3 == 0) {
+                peasent[2] = 3;
+            }
+        }
+        if (peasent[0] == 2) {
+            if (peasent[1]%3 == 1) {
+                peasent[2] = 4;
+            }
+            if (peasent[1]%3 == 2) {
+                peasent[2] = 5;
+            }
+            if (peasent[1]%3 == 0) {
+                peasent[2] = 6;
+            }
+        }
+        if (peasent[0] == 3) {
+            if (peasent[1]%3 == 1) {
+                peasent[2] = 7;
+            }
+            if (peasent[1]%3 == 2) {
+                peasent[2] = 8;
+            }
+            if (peasent[1]%3 == 0) {
+                peasent[2] = 9;
+            }
+        }
+        if (peasent[0] == 0) {
+            if (peasent[1]%3 == 1) {
+                peasent[2] = 10;
+            }
+            if (peasent[1]%3 == 2) {
+                peasent[2] = 11;
+            }
+            if (peasent[1]%3 == 0) {
+                peasent[2] = 12;
+            }
+        }
+    
+        /// 3-12: specific traits (indexes)
+        /// 3 = Strength, 4 = Constitution, 5 = Dexterity, 6 = Aggression, 7 = Stamina, 8 = Defense, 9 = Experience, 10 = Intelligence, 11 = Moral, 12 = Luck
+        
+        ///IF BOTH PARENTS SOLDIERS
+        if (peasent[0] == 1 && raider[0] == 1 && raider[0] != 1) {
+            if (raider[6] == 75) {
+                peasent[6] = 75;
+            } else {
+                peasent[6] = raider[6]-1
+            }
+            if (raider[7] == 75) {
+                peasent[7] = 75;
+            } else {
+                peasent[7] = raider[7]-1
+            }
+        }
+        if (peasent[0] == 1 && trainer[0] == 1 && raider[0] != 1) {
+            if (trainer[6] == 75) {
+                peasent[6] = 75;
+            } else {
+                peasent[6] = trainer[6]-1
+            }
+            if (trainer[7] == 75) {
+                peasent[7] = 75;
+            } else {
+                peasent[7] = trainer[7]-1
+            }
+        }
+        if (peasent[0] == 1 && trainer[0] == 1 && raider[0] == 1) {
+            if (trainer[6] == 75 && raider[6] == 75) {
+                peasent[6] = 75;
+            }
+            if (trainer[6] == 75 || raider[6] == 75){
+                if ((trainer[6]+raider[6])/2 >= 76) {
+                    if (peasent[1]%2 == 1) {
+                        peasent[6] = ((trainer[6]+raider[6])/2)-1
+                    } else {
+                        peasent[6] = (trainer[6]+raider[6])/2
+                    }
+                }
+            }
+            if (trainer[6] > 75 || raider[6] > 75) {
+                if (peasent[1]%2 == 1) {
+                    peasent[6] = ((trainer[6]+raider[6])/2)-1
+                } else {
+                    peasent[6] = (trainer[6]+raider[6])/2
+                }
+            }
+            
+            if (trainer[7] == 75 && raider[7] == 75) {
+                peasent[7] = 75;
+            }
+            if (trainer[7] == 75 || raider[7] == 75){
+                if ((trainer[7]+raider[7])/2 >= 76) {
+                    if (peasent[1]%2 == 1) {
+                        peasent[7] = ((trainer[7]+raider[7])/2)-1
+                    } else {
+                        peasent[7] = (trainer[7]+raider[7])/2
+                    }
+                }
+            }
+            if (trainer[7] > 75 || raider[7] > 75) {
+                if (peasent[1]%2 == 1) {
+                    peasent[7] = ((trainer[7]+raider[7])/2)-1
+                } else {
+                    peasent[7] = (trainer[7]+raider[7])/2
+                }
+            }
+        }
+        //IF PEASENT IS SOLDIER
+        if (peasent[0] == 1) {
+            if (peasent[1]%2 = 1) {
+                peasent[3] = ((raider[3]+trainer[3])/2)-1
+                peasent[4] = ((raider[4]+trainer[4])/2)-1
+                peasent[5] = ((raider[5]+trainer[5])/2)-1
+                peasent[8] = ((raider[8]+trainer[8])/2)-1
+                peasent[9] = ((raider[9]+trainer[9])/2)-1
+                peasent[10] = ((raider[10]+trainer[10])/2)-1
+                peasent[11] = ((raider[11]+trainer[11])/2)-1
+                peasent[12] = ((raider[12]+trainer[12])/2)-1
+            }
+        }
+        
+        ///IF BOTH PARENTS TANK
+        if (peasent[0] == 2 && raider[0] == 2 && raider[0] != 2) {
+            if (raider[4] == 75) {
+                peasent[4] = 75;
+            } else {
+                peasent[4] = raider[4]-1
+            }
+            if (raider[8] == 75) {
+                peasent[8] = 75;
+            } else {
+                peasent[8] = raider[8]-1
+            }
+        }
+        if (peasent[0] == 2 && trainer[0] == 2 && raider[0] != 2) {
+            if (trainer[4] == 75) {
+                peasent[4] = 75;
+            } else {
+                peasent[4] = trainer[4]-1
+            }
+            if (trainer[8] == 75) {
+                peasent[8] = 75;
+            } else {
+                peasent[8] = trainer[8]-1
+            }
+        }
+        if (peasent[0] == 2 && trainer[0] == 2 && raider[0] == 2) {
+            if (trainer[4] == 75 && raider[4] == 75) {
+                peasent[4] = 75;
+            }
+            if (trainer[4] == 75 || raider[4] == 75){
+                if ((trainer[4]+raider[4])/2 >= 76) {
+                    if (peasent[1]%2 == 1) {
+                        peasent[4] = ((trainer[4]+raider[4])/2)-1
+                    } else {
+                        peasent[4] = (trainer[4]+raider[4])/2
+                    }
+                }
+            }
+            if (trainer[4] > 75 || raider[4] > 75) {
+                if (peasent[1]%2 == 1) {
+                    peasent[4] = ((trainer[4]+raider[4])/2)-1
+                } else {
+                    peasent[4] = (trainer[4]+raider[4])/2
+                }
+            }
+            
+            if (trainer[8] == 75 && raider[8] == 75) {
+                peasent[8] = 75;
+            }
+            if (trainer[8] == 75 || raider[8] == 75){
+                if ((trainer[8]+raider[8])/2 >= 76) {
+                    if (peasent[1]%2 == 1) {
+                        peasent[8] = ((trainer[8]+raider[8])/2)-1
+                    } else {
+                        peasent[8] = (trainer[8]+raider[8])/2
+                    }
+                }
+            }
+            if (trainer[8] > 75 || raider[8] > 75) {
+                if (peasent[1]%2 == 1) {
+                    peasent[8] = ((trainer[8]+raider[8])/2)-1
+                } else {
+                    peasent[8] = (trainer[8]+raider[8])/2
+                }
+            }
+        }
+        //IF PEASENT IS TANK
+        if (peasent[0] == 1) {
+            if (peasent[1]%2 = 1) {
+                peasent[3] = ((raider[3]+trainer[3])/2)-1
+                peasent[5] = ((raider[5]+trainer[5])/2)-1
+                peasent[6] = ((raider[6]+trainer[6])/2)-1
+                peasent[7] = ((raider[7]+trainer[7])/2)-1
+                peasent[9] = ((raider[9]+trainer[9])/2)-1
+                peasent[10] = ((raider[10]+trainer[10])/2)-1
+                peasent[11] = ((raider[11]+trainer[11])/2)-1
+                peasent[12] = ((raider[12]+trainer[12])/2)-1
+            }
+        }
+        
+        ///IF BOTH PARENTS MAGE
+        if (peasent[0] == 3 && raider[0] == 3 && raider[0] != 3) {
+            if (raider[9] == 75) {
+                peasent[9] = 75;
+            } else {
+                peasent[9] = raider[9]-1
+            }
+            if (raider[10] == 75) {
+                peasent[10] = 75;
+            } else {
+                peasent[10] = raider[10]-1
+            }
+        }
+        if (peasent[0] == 3 && trainer[0] == 3 && raider[0] != 3) {
+            if (trainer[9] == 75) {
+                peasent[9] = 75;
+            } else {
+                peasent[9] = trainer[9]-1
+            }
+            if (trainer[10] == 75) {
+                peasent[10] = 75;
+            } else {
+                peasent[10] = trainer[10]-1
+            }
+        }
+        if (peasent[0] == 3 && trainer[0] == 3 && raider[0] == 3) {
+            if (trainer[9] == 75 && raider[9] == 75) {
+                peasent[9] = 75;
+            }
+            if (trainer[9] == 75 || raider[9] == 75){
+                if ((trainer[9]+raider[9])/2 >= 76) {
+                    if (peasent[1]%2 == 1) {
+                        peasent[9] = ((trainer[9]+raider[9])/2)-1
+                    } else {
+                        peasent[9] = (trainer[9]+raider[9])/2
+                    }
+                }
+            }
+            if (trainer[9] > 75 || raider[9] > 75) {
+                if (peasent[1]%2 == 1) {
+                    peasent[9] = ((trainer[9]+raider[9])/2)-1
+                } else {
+                    peasent[9] = (trainer[9]+raider[9])/2
+                }
+            }
+            
+            if (trainer[10] == 75 && raider[10] == 75) {
+                peasent[10] = 75;
+            }
+            if (trainer[10] == 75 || raider[10] == 75){
+                if ((trainer[10]+raider[10])/2 >= 76) {
+                    if (peasent[1]%2 == 1) {
+                        peasent[10] = ((trainer[10]+raider[10])/2)-1
+                    } else {
+                        peasent[10] = (trainer[10]+raider[10])/2
+                    }
+                }
+            }
+            if (trainer[10] > 75 || raider[10] > 75) {
+                if (peasent[1]%2 == 1) {
+                    peasent[10] = ((trainer[10]+raider[10])/2)-1
+                } else {
+                    peasent[10] = (trainer[10]+raider[10])/2
+                }
+            }
+        }
+        //IF PEASENT IS MAGE
+        if (peasent[0] == 1) {
+            if (peasent[1]%2 = 1) {
+                peasent[3] = ((raider[3]+trainer[3])/2)-1
+                peasent[4] = ((raider[4]+trainer[4])/2)-1
+                peasent[5] = ((raider[5]+trainer[5])/2)-1
+                peasent[6] = ((raider[6]+trainer[6])/2)-1
+                peasent[7] = ((raider[7]+trainer[7])/2)-1
+                peasent[8] = ((raider[8]+trainer[8])/2)-1
+                peasent[11] = ((raider[11]+trainer[11])/2)-1
+                peasent[12] = ((raider[12]+trainer[12])/2)-1
+            }
+        }
+    
+        ///IF BOTH PARENTS TRICKSTER
+        if (peasent[0] == 4 && raider[0] == 4 && raider[0] != 4) {
+            if (raider[9] == 75) {
+                peasent[9] = 75;
+            } else {
+                peasent[9] = raider[9]-1
+            }
+            if (raider[5] == 75) {
+                peasent[5] = 75;
+            } else {
+                peasent[5] = raider[5]-1
+            }
+        }
+        if (peasent[0] == 4 && trainer[0] == 4 && raider[0] != 4) {
+            if (trainer[9] == 75) {
+                peasent[9] = 75;
+            } else {
+                peasent[9] = trainer[9]-1
+            }
+            if (trainer[5] == 75) {
+                peasent[5] = 75;
+            } else {
+                peasent[5] = trainer[5]-1
+            }
+        }
+        if (peasent[0] == 4 && trainer[0] == 4 && raider[0] == 4) {
+            if (trainer[9] == 75 && raider[9] == 75) {
+                peasent[9] = 75;
+            }
+            if (trainer[9] == 75 || raider[9] == 75){
+                if ((trainer[9]+raider[9])/2 >= 76) {
+                    if (peasent[1]%2 == 1) {
+                        peasent[9] = ((trainer[9]+raider[9])/2)-1
+                    } else {
+                        peasent[9] = (trainer[9]+raider[9])/2
+                    }
+                }
+            }
+            if (trainer[9] > 75 || raider[9] > 75) {
+                if (peasent[1]%2 == 1) {
+                    peasent[9] = ((trainer[9]+raider[9])/2)-1
+                } else {
+                    peasent[9] = (trainer[9]+raider[9])/2
+                }
+            }
+            
+            if (trainer[5] == 75 && raider[5] == 75) {
+                peasent[5] = 75;
+            }
+            if (trainer[5] == 75 || raider[5] == 75){
+                if ((trainer[5]+raider[5])/2 >= 76) {
+                    if (peasent[1]%2 == 1) {
+                        peasent[5] = ((trainer[5]+raider[5])/2)-1
+                    } else {
+                        peasent[5] = (trainer[5]+raider[5])/2
+                    }
+                }
+            }
+            if (trainer[5] > 75 || raider[5] > 75) {
+                if (peasent[1]%2 == 1) {
+                    peasent[5] = ((trainer[5]+raider[5])/2)-1
+                } else {
+                    peasent[5] = (trainer[5]+raider[5])/2
+                }
+            }
+        }
+        //IF PEASENT IS TRICKSTER
+        if (peasent[0] == 1) {
+            if (peasent[1]%2 = 1) {
+                peasent[3] = ((raider[3]+trainer[3])/2)-1
+                peasent[4] = ((raider[4]+trainer[4])/2)-1
+                peasent[6] = ((raider[6]+trainer[6])/2)-1
+                peasent[7] = ((raider[7]+trainer[7])/2)-1
+                peasent[8] = ((raider[8]+trainer[8])/2)-1
+                peasent[10] = ((raider[10]+trainer[10])/2)-1
+                peasent[11] = ((raider[11]+trainer[11])/2)-1
+                peasent[12] = ((raider[12]+trainer[12])/2)-1
+            }
+        }
+    
+        /// 13: Raider/Trainer
+        ///     1 = Raider, 2 = Trainer
+        ///Right now Ill temporarily set the ration to 4/7 of peasents to be trainers
+        if (peasent[1]&7 == 1 || peasent[1]&7 == 2 || peasent[1]&7 == 3 || peasent[1]&7 == 4) {
+            peasent[13] = 2;
+        } else {
+            peasent[13] = 1;
+        }
+        
+        /// 14: Cooldown block
+        /// Right now I'll set the cooldown block for raider for 1 month, trainers = 0
+        if (peasent[13] == 2) {
+            peasent[14] = 0
+        }
+        if (peasent[13] == 1) {
+            peasent[14] = 1
+        }
+
+    }
+   
 }
+
+
+
+
+
+
 
 
 contract KillaBase { 
