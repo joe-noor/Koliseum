@@ -26,7 +26,7 @@ contract Genetics {
     /// trait/heritage 2 genes of trainer
     /// the traits/heritages that are supposed to be passed down the child Killa
     function mixTraits(uint256[14] raider, uint256[14] trainer, uint256 targetBlock) public returns (uint256[14] child){
-        
+    
         uint256[13] peasent;
         ///targetBlock will be set to cooldownEndBlock
         ///Array will be broken down as such: 
@@ -174,6 +174,15 @@ contract Genetics {
                 peasent[10] = ((raider[10]+trainer[10])/2)-1
                 peasent[11] = ((raider[11]+trainer[11])/2)-1
                 peasent[12] = ((raider[12]+trainer[12])/2)-1
+            } else {
+                peasent[3] = ((raider[3]+trainer[3])/2)
+                peasent[4] = ((raider[4]+trainer[4])/2)
+                peasent[5] = ((raider[5]+trainer[5])/2)
+                peasent[8] = ((raider[8]+trainer[8])/2)
+                peasent[9] = ((raider[9]+trainer[9])/2)
+                peasent[10] = ((raider[10]+trainer[10])/2)
+                peasent[11] = ((raider[11]+trainer[11])/2)
+                peasent[12] = ((raider[12]+trainer[12])/2)
             }
         }
         
@@ -244,7 +253,7 @@ contract Genetics {
             }
         }
         //IF PEASENT IS TANK
-        if (peasent[0] == 1) {
+        if (peasent[0] == 2) {
             if (peasent[1]%2 = 1) {
                 peasent[3] = ((raider[3]+trainer[3])/2)-1
                 peasent[5] = ((raider[5]+trainer[5])/2)-1
@@ -254,6 +263,15 @@ contract Genetics {
                 peasent[10] = ((raider[10]+trainer[10])/2)-1
                 peasent[11] = ((raider[11]+trainer[11])/2)-1
                 peasent[12] = ((raider[12]+trainer[12])/2)-1
+            } else {
+                peasent[3] = ((raider[3]+trainer[3])/2)
+                peasent[5] = ((raider[5]+trainer[5])/2)
+                peasent[6] = ((raider[6]+trainer[6])/2)
+                peasent[7] = ((raider[7]+trainer[7])/2)
+                peasent[9] = ((raider[9]+trainer[9])/2)
+                peasent[10] = ((raider[10]+trainer[10])/2)
+                peasent[11] = ((raider[11]+trainer[11])/2)
+                peasent[12] = ((raider[12]+trainer[12])/2)
             }
         }
         
@@ -324,7 +342,7 @@ contract Genetics {
             }
         }
         //IF PEASENT IS MAGE
-        if (peasent[0] == 1) {
+        if (peasent[0] == 3) {
             if (peasent[1]%2 = 1) {
                 peasent[3] = ((raider[3]+trainer[3])/2)-1
                 peasent[4] = ((raider[4]+trainer[4])/2)-1
@@ -334,6 +352,15 @@ contract Genetics {
                 peasent[8] = ((raider[8]+trainer[8])/2)-1
                 peasent[11] = ((raider[11]+trainer[11])/2)-1
                 peasent[12] = ((raider[12]+trainer[12])/2)-1
+            } else {
+                peasent[3] = ((raider[3]+trainer[3])/2)
+                peasent[4] = ((raider[4]+trainer[4])/2)
+                peasent[5] = ((raider[5]+trainer[5])/2)
+                peasent[6] = ((raider[6]+trainer[6])/2)
+                peasent[7] = ((raider[7]+trainer[7])/2)
+                peasent[8] = ((raider[8]+trainer[8])/2)
+                peasent[11] = ((raider[11]+trainer[11])/2)
+                peasent[12] = ((raider[12]+trainer[12])/2)
             }
         }
     
@@ -404,7 +431,7 @@ contract Genetics {
             }
         }
         //IF PEASENT IS TRICKSTER
-        if (peasent[0] == 1) {
+        if (peasent[0] == 4) {
             if (peasent[1]%2 = 1) {
                 peasent[3] = ((raider[3]+trainer[3])/2)-1
                 peasent[4] = ((raider[4]+trainer[4])/2)-1
@@ -414,6 +441,15 @@ contract Genetics {
                 peasent[10] = ((raider[10]+trainer[10])/2)-1
                 peasent[11] = ((raider[11]+trainer[11])/2)-1
                 peasent[12] = ((raider[12]+trainer[12])/2)-1
+            } else {
+                peasent[3] = ((raider[3]+trainer[3])/2)
+                peasent[4] = ((raider[4]+trainer[4])/2)
+                peasent[6] = ((raider[6]+trainer[6])/2)
+                peasent[7] = ((raider[7]+trainer[7])/2)
+                peasent[8] = ((raider[8]+trainer[8])/2)
+                peasent[10] = ((raider[10]+trainer[10])/2)
+                peasent[11] = ((raider[11]+trainer[11])/2)
+                peasent[12] = ((raider[12]+trainer[12])/2)
             }
         }
     
@@ -434,16 +470,11 @@ contract Genetics {
         if (peasent[13] == 1) {
             peasent[14] = 1
         }
-
+        
+        return peasent;
     }
    
 }
-
-
-
-
-
-
 
 
 contract KillaBase { 
@@ -482,7 +513,7 @@ contract KillaBase {
         uint32 trainerId;
 
         // Set to the ID of the trainer killa for raider killa that it is breeding with,
-        // zero otherwise. A non-zero value here is how we know a radier killa
+        // zero otherwise. A non-zero value here is how we know a raider killa
         // is being bred. Used to retrieve the genes for the new
         // killa when the new killa comes into existence.
         uint32 trainerWithId;
