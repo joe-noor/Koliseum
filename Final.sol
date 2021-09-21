@@ -1,3 +1,5 @@
+pragma solidity >=0.7.0 <0.9.0;
+///SPDX-License-Identifier: UNLICENSED
 
 contract ERC721 {
     // Required methods ------- MAY NEED MORE
@@ -27,7 +29,7 @@ contract Genetics {
     /// the traits/heritages that are supposed to be passed down the child Killa
     function mixTraits(uint256[14] raider, uint256[14] trainer, uint256 targetBlock) public returns (uint256[14] child){
     
-        uint256[13] peasent;
+        uint256[14] peasent;
         ///targetBlock will be set to cooldownEndBlock
         ///Array will be broken down as such: 
         
@@ -786,3 +788,339 @@ contract KillaOwnership is KillaBase, ERC721 {
             return result;
         }
     }
+    
+    
+contract KillaBreeding is KillaOwnership {
+
+    /// The Pregnant event is fired when two killas successfully breed and the pregnancy
+    ///  timer begins for the raider.
+    event Pregnant(address owner, uint256 raiderId, uint256 trainerId, uint256 cooldownEndBlock);
+
+    ///  The minimum payment required to use breedWithAuto(). This fee goes towards
+    ///  the gas cost paid by whatever calls giveBirth()
+    ///  SET THE FEE FOR THE BIRTH
+    uint256 public autoBirthFee;
+
+    // Keeps track of number of pregnant raiders.
+    uint256 public pregnantRadiers;
+
+    ///  The address of the sibling contract that is used to implement the
+    ///  genetic combination algorithm.
+    Genetic public geneticAlgo;
+
+    /// @dev Update the address of the genetic contract,
+    /// @param _address An address of a GeneticAlgo contract instance to be used from this point forward.
+    function setGeneticAlgoAddress(address _address) external {
+        Genetic candidateContract = Genetic(_address);
+
+        require(candidateContract.genetics());
+
+        // Set the new contract address
+        geneticAlgo = candidateContract;
+    }
+
+    /// @dev Checks that a given killa is able to breed. Requires that the
+    ///  current cooldown is finished and also checks that there is
+    ///  no pending pregnancy.
+    function _isReadyToBreed(Killa _kil) internal view returns (bool) {
+        // In addition to checking the cooldownEndBlock, we also need to check to see if
+        // the killa has a pending birth; there can be some period of time between the end
+        // of the pregnacy timer and the birth event.
+        return (_kil.trainerWithId == 0) && (_kil.cooldownEndBlock <= uint64(block.number));
+    }
+
+    /// @dev Check if a trainer has authorized breeding with this raider. True if both trainer
+    ///  and radier have the same owner, or if the trainer has given mating permission to
+    ///  the raiders's owner (via approveBreeding()).
+    function _isBreedingPermitted(uint256 _trainerId, uint256 _raiderId) internal view returns (bool) {
+        address raiderOwner = killaIndexToOwner[_raiderId];
+        address trainerOwner = killaIndexToOwner[_trainerId];
+
+        // Breeding is okay if they have same owner, or if the raider's owner was given
+        // permission to breed with this trainer.
+        return (radierOwner == trainerOwner || breedAllowedToAddress[_trainerId] == radierOwner);
+    }
+
+    /// @dev Set the cooldownEndTime for the given Killa
+    /// @param _killa A reference to the Killa in storage which needs its timer started.
+    function _triggerCooldown(Killa storage _killa) internal {
+        // Compute an estimation of the cooldown time in blocks.
+        _killa.cooldownEndBlock = uint64(block.number);
+    }
+
+    /// @notice Grants approval to another user to breed with one of your Killas.
+    /// @param _addr The address that will be able to breed with your Killa. Set to
+    ///  address(0) to clear all breeding approvals for this Killa.
+    /// @param _trainerId A Killa that you own that _addr will now be able to breed with.
+    function approveBreeding(address _addr, uint256 _trainerId)
+        external
+    {
+        require(_owns(msg.sender, _trainerId));
+        breedAllowedToAddress[_trainerId] = _addr;
+    }
+
+    /// @dev Updates the minimum payment required for calling giveBirthAuto()
+    function setAutoBirthFee(uint256 val) external {
+        autoBirthFee = val;
+    }
+
+    /// @dev Checks to see if a given raider is pregnant and (if so) if the gestation
+    ///  period has passed.
+    function _isReadyToGiveBirth(Killa _raider) private view returns (bool) {
+        return (_raider.trainerWithId != 0) && (_raider.cooldownEndBlock <= uint64(block.number));
+    }
+
+    /// @notice Checks that a given raider is able to breed (i.e. it is not pregnant or
+    ///  in the middle of a breeding cooldown).
+    /// @param _killaId reference the id of the Killa, any user can inquire about it
+    function isReadyToBreed(uint256 _killaId)
+        public
+        view
+        returns (bool)
+    {
+        require(_killaId > 0);
+        Killa storage kil = killas[_killaId];
+        return _isReadyToBreed(kil);
+    }
+
+    /// @dev Checks whether a raider is currently pregnant.
+    /// @param _killaId reference the id of the killa, any user can inquire about it
+    function isPregnant(uint256 _killaId)
+        public
+        view
+        returns (bool)
+    {
+        require(_killaId > 0);
+        // A killa is pregnant if and only if this field is set
+        return killas[_killaId].trainerWithId != 0;
+    }
+
+    /// @dev Internal check to see if a given trainer and raider are a valid mating pair. DOES NOT
+    ///  check ownership permissions (that is up to the caller).
+    /// @param _raider A reference to the Killa struct of the potential raider.
+    /// @param _raiderId The raider's ID.
+    /// @param _trainer A reference to the Killa struct of the potential trainer.
+    /// @param _trainerId The traine's ID
+    function _isValidMatingPair(
+        Kitty storage _raider,
+        uint256 _raiderId,
+        Kitty storage _trainer,
+        uint256 _trainerId
+    )
+        private
+        view
+        returns(bool)
+    {
+        // A Killa can't breed with itself
+        if (_raiderId == _trainerId) {
+            return false;
+        }
+
+        // Killa can't breed with their parents.
+        if (_raider.raiderId == _trainerId || _raider.trainerId == _trainerId) {
+            return false;
+        }
+        if (_trainer.raiderId == _raiderId || _trainer.trainerId == _raiderId) {
+            return false;
+        }
+
+        // We can short circuit the sibling check (below) if either killa is
+        // gen zero (has a matron ID of zero).
+        if (_trainer.raiderId == 0 || _raider.raiderId == 0) {
+            return true;
+        }
+
+        // Killas can't breed with full or half siblings.
+        if (_trainer.raiderId == _raider.raiderId || _trainer.raiderId == _raider.trainerId) {
+            return false;
+        }
+        if (_trainer.trainerId == _raider.raiderId || _trainer.trainerId == _raider.trainerId) {
+            return false;
+        }
+        return true;
+    }
+
+
+    /// @notice Checks to see if two killas can breed together, including checks for
+    ///  ownership and breeding approvals. Does NOT check that both killas are ready for
+    ///  breeding (i.e. breedWith could still fail until the cooldowns are finished).
+    function canBreedWith(uint256 _raiderId, uint256 _trainerId)
+        external
+        view
+        returns(bool)
+    {
+        require(_raiderId > 0);
+        require(_trainerId > 0);
+        Killa storage raider = killas[_raiderId];
+        Killa storage trainer = killas[_trainerId];
+        return _isValidMatingPair(raider, _raiderId, trainer, _trainerId) &&
+            _isBreedingPermitted(_trainerId, _raiderId);
+    }
+
+    /// @dev Internal utility function to initiate breeding, assumes that all breeding
+    ///  requirements have been checked.
+    function _breedWith(uint256 _raiderId, uint256 _trainerId) internal {
+        // Grab a reference to the Kitties from storage.
+        Killa storage trainer = killas[_traineId];
+        Killa storage raider = killas[_raiderId];
+
+        // Mark the raider as pregnant, keeping track of who the trainer is.
+        raider.trainerWithId = uint32(_trainerId);
+
+        // Trigger the cooldown for both parents.
+        _triggerCooldown(trainer);
+        _triggerCooldown(raider);
+
+        // Clear breeding permission for both parents
+        delete breedAllowedToAddress[_raiderId];
+        delete breedAllowedToAddress[_trainerId];
+
+        // Every time a killa gets pregnant, counter is incremented.
+        pregnantKillas++;
+
+        // Emit the pregnancy event.
+        Pregnant(killaIndexToOwner[_raiderId], _raiderId, _trainerId, raider.cooldownEndBlock);
+    }
+
+    /// @notice Breed a Killa you own (as raider) with a trainer that you own, or for which you
+    ///  have previously been given Breeding approval. Will either make your killa pregnant, or will
+    ///  fail entirely. Requires a pre-payment of the fee given out to the first caller of giveBirth()
+    /// @param _raiderId The ID of the Killa acting as raider (will end up pregnant if successful)
+    /// @param _trainerId The ID of the Killa acting as trainer (will begin its breeding cooldown if successful)
+    function breedWithAuto(uint256 _raiderId, uint256 _trainerId)
+        external
+        payable
+    {
+        // Checks for payment.
+        require(msg.value >= autoBirthFee);
+
+        // Caller must own the raider.
+        require(_owns(msg.sender, _raiderId));
+
+        // Check that raider and trainer are both owned by caller, or that the trainer
+        // has given breeding permission to caller (i.e. raiders's owner).
+        // Will fail for _trainerId = 0
+        require(_isBreedingPermitted(_trainerId, _raiderId));
+
+        // Grab a reference to the potential raider
+        Killa storage raider = killas[_raiderId];
+
+        // Make sure raider isn't pregnant, or in the middle of a breeding cooldown
+        require(_isReadyToBreed(raider));
+
+        // Grab a reference to the potential trainer
+        Killa storage trainer = killas[_trainerId];
+
+        // Make sure trainer isn't in the middle of a breeding cooldown
+        require(_isReadyToBreed(trainer));
+
+        // Test that these killas are a valid mating pair.
+        require(_isValidMatingPair(
+            raider,
+            _raiderId,
+            trainer,
+            _trainerId
+        ));
+
+        // All checks passed
+        _breedWith(_raiderId, _killaId);
+    }
+
+    /// @notice Have a pregnant raider give birth
+    /// @param _raiderId A Killa ready to give birth.
+    /// @return The Killa ID of the new killa.
+    /// @dev Looks at a given Killa and, if pregnant and if the gestation period has passed,
+    ///  combines the genes of the two parents to create a new killa. The new Killa is assigned
+    ///  to the current owner of the radier. Upon successful completion, both the raider and the
+    ///  new killa will be ready to breed again. Note that anyone can call this function (if they
+    ///  are willing to pay the gas), but the new killa always goes to the mother's owner.
+    function giveBirth(uint256 _raiderId)
+        external
+        returns(uint256)
+    {
+        // Grab a reference to the raider in storage.
+        Killa storage raider = killas[_raiderId];
+
+        // Check that the raider is a valid killa.
+        require(raider.birthTime != 0);
+
+        // Check that the raider is pregnant, and that its time to give birth
+        require(_isReadyToGiveBirth(raider));
+
+        // Grab a reference to the trainer in storage.
+        uint256 trainerId = raider.trainerWithId;
+        Killa storage trainer = killas[trainerId];
+
+        // Determine the higher generation number of the two parents
+        uint16 parentGen = raider.generation;
+        if (trainer.generation > raider.generation) {
+            parentGen = trainer.generation;
+        }
+
+        // Call the gene mixing operation.
+        uint256 childGenes = geneticAlgo.mixTraits(raider.traits, trainer.traits, raider.cooldownEndBlock - 1);
+
+        // Make the new killa
+        address owner = killaIndexToOwner[_raiderId];
+        uint256 killaId = _createKilla(_raiderId, raider.trainerWithId, parentGen + 1, childGenes, owner);
+
+        // Clear the reference to trainer from the raider
+        delete raider.trainerWithId;
+
+        // Every time a killa gives birth counter is decremented.
+        pregnantKillas--;
+
+        // Send the balance fee to the person who made birth happen.
+        msg.sender.send(autoBirthFee);
+
+        // return the new killas's ID
+        return killaId;
+    }
+}
+
+/// @dev The main Killas contract, keeps track of killas 
+contract KillaCore{
+    
+    // Set in case the core contract is broken and an upgrade is required
+    address public newContractAddress;
+
+    /// @notice Creates the main Killa smart contract instance.
+    function KillaCore() public {
+
+        // start with the invalid killa 0 - so we don't have generation-0 parent issues
+        _createKitty(0, 0, 0, uint256(-1), address(0));
+    }
+
+
+    /// @notice Returns all the relevant information about a specific killa.
+    /// @param _id The ID of the killa of interest.
+    function getKilla(uint256 _id)
+        external
+        view
+        returns (
+        bool isGestating,
+        bool isReady,
+        uint256 cooldownIndex,
+        uint256 nextActionAt,
+        uint256 trainerWithId,
+        uint256 birthTime,
+        uint256 raiderId,
+        uint256 trainerId,
+        uint256 generation,
+        uint256 traits
+    ) {
+        Killa storage kil = killas[_id];
+
+        // if this variable is 0 then it's not gestating
+        isGestating = (kil.trainerWithId != 0);
+        isReady = (kil.cooldownEndBlock <= block.number);
+        cooldownIndex = uint256(kil.cooldownIndex);
+        nextActionAt = uint256(kil.cooldownEndBlock);
+        trainerWithId = uint256(kil.trainerWithId);
+        birthTime = uint256(kil.birthTime);
+        raiderId = uint256(kil.raiderId);
+        trainerId = uint256(kik.trainerId);
+        generation = uint256(kil.generation);
+        traits = kil.traits;
+    }
+}
